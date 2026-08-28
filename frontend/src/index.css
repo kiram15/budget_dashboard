@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+  }
+
+  /* Every numeric value in the app — balances, deltas, dates, percentages —
+     should carry this class so columns of numbers align like a statement. */
+  .num {
+    @apply font-mono tabular-nums;
+  }
+
+  /* Visible focus ring everywhere, including custom controls like the
+     range selector segments. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-bg;
+  }
+}

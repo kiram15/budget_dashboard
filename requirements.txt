@@ -1,0 +1,10 @@
+Django>=4.2,<5.0            # 4.2 is the LTS release — broader Python version support than 5.x
+django-environ>=0.11        # loads .env into settings
+plaid-python>=27.0.0        # official Plaid SDK
+keyring>=24.0                # OS keychain access for tokens
+yfinance>=0.2.40             # backfilling historical security prices
+anthropic>=0.40.0            # only needed for the market-summary feature
+
+# Pick ONE database driver depending on what you chose:
+psycopg2-binary>=2.9         # if using Postgres
+# (SQLite needs no extra package — it's in Python's stdlib)

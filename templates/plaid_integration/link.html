@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Link a new institution</title>
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+</head>
+<body>
+  <h1>Link a new institution</h1>
+  <p>
+    Clicking below opens Plaid's own widget. Your bank username and
+    password are typed there, never on this page or sent to this server.
+  </p>
+  <input id="account-label" placeholder="short label, e.g. 'checking'">
+  <button id="link-button">Connect an account</button>
+
+  <script>
+    const linkToken = "{{ link_token }}";
+
+    const handler = Plaid.create({
+      token: linkToken,
+      onSuccess: async (public_token, metadata) => {
+        const label = document.getElementById("account-label").value || "default";
+        const response = await fetch("/plaid/link/exchange/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            public_token: public_token,
+            institution_name: metadata.institution.name,
+            institution_id: metadata.institution.institution_id,
+            account_label: label,
+          }),
+        });
+        const result = await response.json();
+        alert("Linked: " + result.accounts.join(", "));
+      },
+      onExit: (err, metadata) => {
+        if (err) console.error("Link exited with error:", err);
+      },
+    });
+
+    document.getElementById("link-button").addEventListener("click", () => handler.open());
+  </script>
+</body>
+</html>
