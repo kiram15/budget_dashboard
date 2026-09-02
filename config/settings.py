@@ -20,8 +20,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
     "apps.accounts",
-    "apps.transactions",
     "apps.investments",
     "apps.plaid_integration",
 ]
@@ -79,6 +79,19 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# DRF is only serving this laptop's own frontend at 127.0.0.1:5173 (via
+# the Vite dev proxy — see frontend/vite.config.js) — there's no user
+# account system yet (see ALLOWED_HOSTS note above), so there's nothing
+# meaningful to authenticate against right now. AllowAny is explicit here
+# on purpose rather than left as DRF's implicit default, so it's an
+# obvious thing to revisit — and tighten — the moment this app is ever
+# exposed beyond localhost.
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+}
 
 # Plaid-specific settings, kept in a separate file — see that file's
 # docstring for why.

@@ -23,7 +23,7 @@ export default function Investments() {
     getPortfolioSnapshots(range).then(setSnapshots)
   }, [range])
 
-  const totalValue = holdings.reduce((sum, h) => sum + h.value, 0)
+  const totalValue = holdings.reduce((sum, holding) => sum + Number(holding.value), 0);
   const flagged = holdings.filter((h) => h.trailing_30d_return <= LOSS_THRESHOLD)
 
   return (

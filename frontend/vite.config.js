@@ -9,9 +9,11 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     proxy: {
-      // Once the DRF layer exists, uncomment so /api calls in dev
-      // reach Django without CORS config:
-      // '/api': 'http://127.0.0.1:8000',
+      // Now that Django serves real /api/ routes (see config/urls.py),
+      // forward dev-server requests there so the frontend can keep using
+      // relative paths like fetch('/api/accounts/') without hardcoding
+      // http://127.0.0.1:8000 or dealing with CORS.
+      '/api': 'http://127.0.0.1:8000',
     },
   },
 })
