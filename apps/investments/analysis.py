@@ -8,6 +8,7 @@ Two independent pieces, deliberately kept separate:
    balances, and account info are never included in this call. See the
    docstring on the function itself for exactly what's sent.
 """
+from __future__ import annotations
 from datetime import date, timedelta
 from decimal import Decimal
 

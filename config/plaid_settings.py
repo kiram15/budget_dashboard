@@ -7,6 +7,8 @@ In your main config/settings.py, add:
     from .plaid_settings import *  # noqa
 """
 import environ
+from plaid.model.country_code import CountryCode
+from plaid.model.products import Products
 
 env = environ.Env()
 environ.Env.read_env()  # reads .env in project root
@@ -19,8 +21,8 @@ PLAID_REDIRECT_URI = env("PLAID_REDIRECT_URI", default="")
 # Products your app actually uses — keep this list minimal, Plaid
 # bills/scopes by product. Add "liabilities" later if you want
 # credit card APR/statement data too.
-PLAID_PRODUCTS = ["transactions", "investments"]
-PLAID_COUNTRY_CODES = ["US"]
+PLAID_PRODUCTS = [Products("investments")]
+PLAID_COUNTRY_CODES = [CountryCode("US")]
 
 # Name under which all tokens are namespaced in the OS keychain.
 # See apps/plaid_integration/token_store.py

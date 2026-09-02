@@ -11,35 +11,110 @@
     Clicking below opens Plaid's own widget. Your bank username and
     password are typed there, never on this page or sent to this server.
   </p>
+  <p id="oauth-status" style="display:none; font-style:italic;">
+    Resuming after institution login...
+  </p>
   <input id="account-label" placeholder="short label, e.g. 'checking'">
   <button id="link-button">Connect an account</button>
 
   <script>
-    const linkToken = "{{ link_token }}";
+    // --- OAuth institutions (Fidelity included) work differently from
+    // username/password ones: clicking "Connect" sends the WHOLE PAGE
+    // (not a popup) over to the institution's own login site. When the
+    // user finishes there, the institution redirects the browser back to
+    // PLAID_REDIRECT_URI — which is this same page — with an
+    // `oauth_state_id` query param attached.
+    //
+    // That means this page can load in one of two very different states:
+    //   1. Fresh visit — no oauth_state_id — show the normal "Connect"
+    //      button flow, same as any non-OAuth institution.
+    //   2. Returning from the institution's OAuth redirect — oauth_state_id
+    //      IS present — Plaid Link must be reopened with the SAME
+    //      link_token used to start the flow (a fresh server-rendered
+    //      token here is a different token and won't work), plus
+    //      `receivedRedirectUri` set to this exact URL, so Link can
+    //      resume where it left off.
+    //
+    // Since a full page redirect wipes normal JS variables, the token
+    // (and the account label the user typed) are stashed in
+    // sessionStorage right before handler.open() sends the browser away,
+    // and read back out here if this turns out to be the return trip.
+    const serverLinkToken = "{{ link_token }}";
+    const params = new URLSearchParams(window.location.search);
+    const isOAuthReturn = params.has("oauth_state_id");
 
-    const handler = Plaid.create({
-      token: linkToken,
-      onSuccess: async (public_token, metadata) => {
-        const label = document.getElementById("account-label").value || "default";
-        const response = await fetch("/plaid/link/exchange/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            public_token: public_token,
-            institution_name: metadata.institution.name,
-            institution_id: metadata.institution.institution_id,
-            account_label: label,
-          }),
+    const labelInput = document.getElementById("account-label");
+    const linkButton = document.getElementById("link-button");
+    const oauthStatus = document.getElementById("oauth-status");
+
+    async function exchangeToken(publicToken, metadata) {
+      const label = sessionStorage.getItem("plaid_account_label") || "default";
+      const response = await fetch("/plaid/link/exchange/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          public_token: publicToken,
+          institution_name: metadata.institution.name,
+          institution_id: metadata.institution.institution_id,
+          account_label: label,
+        }),
+      });
+      const result = await response.json();
+      sessionStorage.removeItem("plaid_link_token");
+      sessionStorage.removeItem("plaid_account_label");
+      alert("Linked: " + result.accounts.join(", "));
+    }
+
+    if (isOAuthReturn) {
+      // Return trip: reuse the token from before the redirect, not the
+      // fresh one this page load happened to render server-side.
+      oauthStatus.style.display = "block";
+      linkButton.style.display = "none";
+      labelInput.style.display = "none";
+
+      const storedToken = sessionStorage.getItem("plaid_link_token");
+      if (!storedToken) {
+        // Can happen if the user opened this URL directly, or
+        // sessionStorage got cleared mid-flow (e.g. private browsing).
+        // Nothing we can recover here — send them back to start over.
+        oauthStatus.textContent =
+          "Lost track of the original session — please start over.";
+      } else {
+        const handler = Plaid.create({
+          token: storedToken,
+          receivedRedirectUri: window.location.href,
+          onSuccess: (public_token, metadata) => {
+            exchangeToken(public_token, metadata);
+          },
+          onExit: (err) => {
+            if (err) console.error("Link exited with error:", err);
+          },
         });
-        const result = await response.json();
-        alert("Linked: " + result.accounts.join(", "));
-      },
-      onExit: (err, metadata) => {
-        if (err) console.error("Link exited with error:", err);
-      },
-    });
+        handler.open();
+      }
+    } else {
+      // Fresh visit: normal flow, but stash the token + label first in
+      // case this turns out to be an OAuth institution and the browser
+      // is about to navigate away entirely.
+      const handler = Plaid.create({
+        token: serverLinkToken,
+        onSuccess: (public_token, metadata) => {
+          exchangeToken(public_token, metadata);
+        },
+        onExit: (err) => {
+          if (err) console.error("Link exited with error:", err);
+        },
+      });
 
-    document.getElementById("link-button").addEventListener("click", () => handler.open());
+      linkButton.addEventListener("click", () => {
+        sessionStorage.setItem("plaid_link_token", serverLinkToken);
+        sessionStorage.setItem(
+          "plaid_account_label",
+          labelInput.value || "default"
+        );
+        handler.open();
+      });
+    }
   </script>
 </body>
 </html>
