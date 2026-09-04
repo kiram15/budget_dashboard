@@ -21,7 +21,7 @@ PLAID_REDIRECT_URI = env("PLAID_REDIRECT_URI", default="")
 # Products your app actually uses — keep this list minimal, Plaid
 # bills/scopes by product. Add "liabilities" later if you want
 # credit card APR/statement data too.
-PLAID_PRODUCTS = [Products("investments")]
+PLAID_PRODUCTS = [Products("investments"), Products("transactions")]
 PLAID_COUNTRY_CODES = [CountryCode("US")]
 
 # Name under which all tokens are namespaced in the OS keychain.
